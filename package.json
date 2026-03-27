@@ -1,6 +1,6 @@
 {
 	"name": "vike-rss-generator",
-	"version": "0.1.0",
+	"version": "0.0.1",
 	"description": "Vite plugin for Vike that generates RSS, Atom, and JSON Feed files at build time",
 	"type": "module",
 	"exports": {
