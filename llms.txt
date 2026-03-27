@@ -1,0 +1,43 @@
+# vike-rss-generator
+
+> A Vite plugin and Vike extension that generates RSS 2.0, Atom 1.0, and JSON Feed 1.1 files from Vike routes at build time.
+
+## Installation
+
+```bash
+bun add vike-rss-generator
+```
+
+Peers: vike >= 0.4.250, vite >= 7.0.0
+
+## Usage
+
+1. Add `vikeRss()` plugin to vite.config.ts with `baseUrl` and `groups`
+2. Extend Vike config with `vike-rss-generator/config` in +config.ts
+3. Create `+rss.ts` files next to pages to opt them into feeds
+
+## Exports
+
+- `vike-rss-generator` — `vikeRss` plugin factory, `normalizeDate`, `toRfc2822`, `toIso8601`, and all public types
+- `vike-rss-generator/config` — Vike extension config (used in `extends` only)
+
+## Key Types
+
+- `RssPluginOptions` — plugin options: baseUrl, groups, defaultGroup, include/exclude, concurrency, dryRun
+- `RssGroupConfig` — group definition: id, name, format, channel metadata, sorting, limits
+- `RssPageConfig` — per-page config: single item or array for multi-group
+- `RssPageConfigFn` — async function form receiving page context
+- `RssItemConfig` — item fields: title, description, content, pubDate, author, categories, guid, enclosure, customFields
+
+## Docs
+
+- [Getting Started](docs/getting-started.md)
+- [Groups](docs/groups.md)
+- [Per-Page Config](docs/per-page-config.md)
+- [Formats](docs/formats.md)
+- [Custom Output Directory](docs/custom-output-directory.md)
+- [Content in Feeds](docs/content-in-feeds.md)
+- [Podcast Feeds](docs/podcast-feeds.md)
+- [Git Dates](docs/git-dates.md)
+- [Validation](docs/validation.md)
+- [Advanced Options](docs/advanced-options.md)

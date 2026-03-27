@@ -1,0 +1,59 @@
+{
+	"name": "vike-rss-generator",
+	"version": "0.1.0",
+	"description": "Vite plugin for Vike that generates RSS, Atom, and JSON Feed files at build time",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./config": {
+			"types": "./dist/config.d.ts",
+			"default": "./dist/config.js"
+		}
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup",
+		"test": "bun test",
+		"prepublishOnly": "tsup",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --write",
+		"format": "biome check . --write --unsafe"
+	},
+	"keywords": [
+		"vike",
+		"vite",
+		"rss",
+		"atom",
+		"json-feed",
+		"feed",
+		"vite-plugin",
+		"vike-plugin",
+		"vike-vite-plugin"
+	],
+	"author": "Beau",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/welpie21/vike-rss-generator.git"
+	},
+	"peerDependencies": {
+		"vike": ">=0.4.250",
+		"vite": ">=7.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.6",
+		"@types/bun": "^1.3.10",
+		"@types/node": "^25.3.3",
+		"tsup": "^8.0.0",
+		"typescript": "^5.9.3",
+		"vike": "^0.4.229",
+		"vite": "^7.0.0"
+	}
+}

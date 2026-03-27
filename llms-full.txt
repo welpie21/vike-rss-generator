@@ -1,0 +1,202 @@
+# vike-rss-generator — Full Reference
+
+A Vite plugin and Vike extension that generates RSS 2.0, Atom 1.0, and JSON Feed 1.1 files from Vike routes at build time. Works in SSR, SSG, and SPA environments.
+
+## Architecture
+
+The plugin runs as a Vite plugin with `apply: "build"`. Feed generation happens in the `closeBundle` hook of the SSR build pass, using `getVikeConfig()` from `vike/plugin` to access route data and per-page configs.
+
+Pipeline: resolveConfig → collect → filter → metadata → serialize → validate → write
+
+## Installation
+
+```bash
+bun add vike-rss-generator
+```
+
+Peer dependencies: vike >= 0.4.250, vite >= 7.0.0
+
+## Setup
+
+### Vite Plugin
+
+```ts
+// vite.config.ts
+import { vikeRss } from "vike-rss-generator";
+
+export default {
+  plugins: [
+    vikeRss({
+      baseUrl: "https://example.com",
+      groups: [
+        {
+          id: "blog",
+          title: "My Blog",
+          description: "Latest posts",
+          format: "rss",
+          language: "en",
+          maxItems: 20,
+        },
+      ],
+    }),
+  ],
+};
+```
+
+### Vike Extension
+
+```ts
+// pages/+config.ts
+import vikeRssConfig from "vike-rss-generator/config";
+
+export default {
+  extends: [vikeRssConfig],
+};
+```
+
+### Per-Page Config
+
+```ts
+// pages/blog/@slug/+rss.ts
+import type { RssPageConfig } from "vike-rss-generator";
+
+export const rss: RssPageConfig = {
+  group: "blog",
+  title: "My Post Title",
+  description: "A summary",
+  pubDate: new Date("2026-03-01"),
+};
+```
+
+## Package Exports
+
+- `vike-rss-generator` — main entry: `vikeRss` plugin factory, `normalizeDate`, `toRfc2822`, `toIso8601`, and all public types
+- `vike-rss-generator/config` — Vike extension config (used in `extends` only)
+
+## Plugin Options (RssPluginOptions)
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| baseUrl | string | required | Fully qualified base URL |
+| groups | RssGroupConfig[] | required | Feed group definitions |
+| defaultGroup | string | undefined | Default group ID for pages without explicit group |
+| include | (string \| RegExp)[] | [] | URL patterns to include |
+| exclude | (string \| RegExp)[] | [] | URL patterns to exclude |
+| concurrency | number | 10 | Max concurrent async resolutions |
+| dryRun | boolean | false | Log output without writing files |
+
+## Group Config (RssGroupConfig)
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| id | string | required | Identifier for +rss.ts targeting |
+| name | string | id | Output filename (without extension) |
+| outDir | string | build root | Output directory relative to build output |
+| format | FeedFormat \| FeedFormat[] | "rss" | Format(s): "rss", "atom", "json" |
+| title | string | required | Channel title |
+| description | string | required | Channel description |
+| link | string | baseUrl | Channel link URL |
+| language | string | — | Language code |
+| copyright | string | — | Copyright notice |
+| managingEditor | string | — | Editor email |
+| webMaster | string | — | Webmaster email |
+| ttl | number | — | Time-to-live in minutes |
+| image | RssChannelImage | — | Channel image |
+| category | string \| string[] | — | Channel categories |
+| skipHours | number[] | — | Hours (0-23) to skip |
+| skipDays | string[] | — | Days to skip |
+| selfLink | boolean | true | Include atom:link rel="self" |
+| maxItems | number | unlimited | Max items in feed |
+| sortBy | "pubDate" \| "title" \| Function | "pubDate" | Sort field |
+| sortOrder | "asc" \| "desc" | "desc" | Sort direction |
+| prettyXml | boolean | false | Indent XML output |
+| extension | string | format default | Custom file extension (e.g. ".rss"), overrides default |
+| namespaces | Record<string, string> | {} | Custom XML namespace declarations |
+| stylesheet | string | — | XSL stylesheet URL |
+| hub | string | — | WebSub hub URL |
+
+## Per-Page Item Config (RssItemConfig)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| group | string | Target group ID (required unless defaultGroup set) |
+| link | string | Override auto-derived item link URL |
+| title | string | Item title (required) |
+| description | string | Summary/excerpt |
+| content | string | Full HTML content (CDATA wrapped) |
+| pubDate | Date \| string \| number | Publication date |
+| author | string | Author name or email |
+| categories | string[] | Category tags |
+| guid | string | Unique identifier (defaults to page URL) |
+| enclosure | { url, length, type } | Media attachment |
+| customFields | Record<string, string \| Record<string, string>> | Custom XML elements |
+
+## Per-Page Config Types
+
+- `RssPageConfig` — static: `RssItemConfig | RssItemConfig[]`
+- `RssPageConfigFn` — async function: `(ctx: RssPageContext) => RssPageConfig | Promise<RssPageConfig>`
+- `RssPageContext` — context: `{ url: string, routeParams: Record<string, string>, data: unknown }`
+
+## Feed Formats
+
+### RSS 2.0
+- XML with `<channel>` and `<item>` elements
+- Dates in RFC 2822 format
+- HTML content in `<content:encoded>` with CDATA
+- Supports custom XML namespaces
+
+### Atom 1.0
+- XML with `<feed>` and `<entry>` elements
+- Dates in ISO 8601 format
+- HTML content in `<content type="html">` with CDATA
+- Native self-link and hub support
+
+### JSON Feed 1.1
+- JSON object with `items` array
+- Dates in ISO 8601 format
+- HTML content in `content_html` field
+- Authors as array of objects
+
+## File Naming
+
+| Format | Single format | With RSS |
+| --- | --- | --- |
+| RSS | {name}.xml | {name}.xml |
+| Atom | {name}.xml | {name}.atom.xml |
+| JSON | {name}.json | {name}.json |
+
+## Custom Fields
+
+String values: `<dc:creator>Author Name</dc:creator>`
+Object values: `<media:content url="..." medium="image"/>` (self-closing with attributes)
+
+## CDATA Wrapping
+
+HTML content in description and content fields is automatically wrapped in `<![CDATA[...]]>`. Falls back to XML entity escaping if content contains `]]>`.
+
+## Validation
+
+After serialization, the validator checks for missing required fields per spec. Warnings are logged via console.warn — the build never fails due to validation.
+
+## Utility Exports
+
+- `normalizeDate(value)` — converts Date, string, or number to Date
+- `toRfc2822(date)` — formats as RFC 2822 (RSS 2.0)
+- `toIso8601(date)` — formats as ISO 8601 (Atom, JSON Feed)
+
+## Module Structure
+
+```
+src/
+├── index.ts          # Public API re-exports
+├── config.ts         # Vike extension
+├── plugin.ts         # Vite plugin factory
+├── resolveConfig.ts  # Config normalization
+├── collector.ts      # Page collection from Vike
+├── filter.ts         # Include/exclude filtering
+├── metadata.ts       # Async metadata resolution
+├── serializer.ts     # RSS/Atom/JSON serializers
+├── writer.ts         # File output
+├── validator.ts      # Feed validation
+└── types.ts          # All type definitions
+```
